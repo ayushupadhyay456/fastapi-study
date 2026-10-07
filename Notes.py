@@ -58,3 +58,46 @@ from fastapi.responses import (
 
 from fastapi import BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+
+# BackgroundTasks: Runs non-blocking tasks after sending the response (e.g., sending emails or generating reports).
+
+# CORSMiddleware: Configures cross-origin requests for frontend clients (React, Vue, mobile apps).
+
+from typing import Annotated
+from fastapi import FastAPI, APIRouter, Depends, HTTPException, Query, status
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
+
+app = FastAPI(title="Store API")
+
+# Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Schemas
+class ItemCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=50)
+    price: float = Field(gt=0)
+
+class ItemResponse(ItemCreate):
+    id: int
+
+# Router
+router = APIRouter(prefix="/items", tags=["items"])
+
+@router.post("/", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
+async def create_item(item: ItemCreate):
+    return ItemResponse(id=1, **item.model_dump())
+
+@router.get("/", response_model=list[ItemResponse])
+async def list_items(
+    limit: Annotated[int, Query(ge=1, le=100)] = 10,
+    offset: Annotated[int, Query(ge=0)] = 0,
+):
+    return []
+
+app.include_router(router)
